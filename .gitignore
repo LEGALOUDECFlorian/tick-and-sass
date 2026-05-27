@@ -1,0 +1,9 @@
+node_modules
+.env
+docker.env
+node_modules
+dist
+.pg-data
+redis-data
+tests/load/reports/*.json
+tests/load/reports/*.html

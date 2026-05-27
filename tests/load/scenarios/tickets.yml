@@ -1,0 +1,194 @@
+config:
+  target: "http://localhost:4005"
+  phases:
+    - duration: 30
+      arrivalRate: 2
+      name: "Warm up"
+    - duration: 60
+      arrivalRate: 5
+      name: "Sustained load"
+    - duration: 30
+      arrivalRate: 1
+      name: "Peak load"
+  
+  # Configuration pour l'environnement docker
+  environments:
+    docker:
+      target: "http://api:4005"
+  
+  # Variables globales
+  variables:
+    ticketId: 1
+    teamId: 1
+    userId: 1
+
+scenarios:
+  # Scénario 1 : Récupérer tous les tickets
+  - name: "Get all tickets"
+    weight: 30
+    flow:
+      - post:
+          url: "/graphql"
+          json:
+            query: |
+              query Tickets($limit: Int, $team_id: Int, $user_id: Int, $status: Int) {
+                tickets(limit: $limit, team_id: $team_id, user_id: $user_id, status: $status) {
+                  id
+                  title
+                  description
+                  status
+                  priority
+                  created_at
+                  team { name }
+                }
+              }
+            variables:
+              limit: 10
+          capture:
+            - json: "$.data.tickets[0].id"
+              as: "firstTicketId"
+
+  # Scénario 2 : Récupérer un ticket spécifique avec ses détails
+  - name: "Get ticket details"
+    weight: 25
+    flow:
+      - post:
+          url: "/graphql"
+          json:
+            query: |
+              query TicketAndTeams($id: Int!) {
+                ticket(id: $id) {
+                  id
+                  title
+                  description
+                  status
+                  priority
+                  created_at
+                  user {
+                    id
+                    name
+                    email
+                  }
+                  team {
+                    id
+                    name
+                  }
+                  tasks {
+                    id
+                    title
+                    description
+                    status
+                    created_at
+                  }
+                  comments {
+                    id
+                    content
+                    created_at
+                    user {
+                      id
+                      name
+                    }
+                  }
+                }
+                teams { id name }
+              }
+            variables:
+              id: "{{ ticketId }}"
+
+  # Scénario 3 : Créer un nouveau ticket
+  - name: "Create ticket"
+    weight: 20
+    flow:
+      - post:
+          url: "/graphql"
+          json:
+            query: |
+              mutation CreateTicket($data: CreateTicket!) {
+                createTicket(data: $data) {
+                  id
+                  title
+                  description
+                  priority
+                  created_at
+                  updated_at
+                }
+              }
+            variables:
+              data:
+                title: "Test ticket {{ $randomString() }}"
+                description: "Ticket créé par Artillery - {{ $timestamp }}"
+                priority: 2
+                status: 1
+                team_id: 1
+                user_id: 1
+          capture:
+            - json: "$.data.createTicket.id"
+              as: "newTicketId"
+
+  # Scénario 4 : Parcours utilisateur complet
+  - name: "Complete user journey"
+    weight: 25
+    flow:
+      # 1. Récupérer la liste des tickets
+      - post:
+          url: "/graphql"
+          json:
+            query: |
+              query Tickets($limit: Int) {
+                tickets(limit: $limit) {
+                  id
+                  title
+                  status
+                  priority
+                }
+              }
+            variables:
+              limit: 5
+          capture:
+            - json: "$.data.tickets[0].id"
+              as: "selectedTicketId"
+      
+      # 2. Consulter un ticket en détail
+      - think: 2
+      - post:
+          url: "/graphql"
+          json:
+            query: |
+              query TicketAndTeams($id: Int!) {
+                ticket(id: $id) {
+                  id
+                  title
+                  description
+                  status
+                  priority
+                  user { name }
+                  team { name }
+                  tasks { id title status }
+                  comments { id content }
+                }
+                teams { id name }
+              }
+            variables:
+              id: "{{ selectedTicketId }}"
+      
+      # 3. Créer un nouveau ticket
+      - think: 3
+      - post:
+          url: "/graphql"
+          json:
+            query: |
+              mutation CreateTicket($data: CreateTicket!) {
+                createTicket(data: $data) {
+                  id
+                  title
+                  description
+                }
+              }
+            variables:
+              data:
+                title: "Journey ticket {{ $randomString() }}"
+                description: "Created during user journey test"
+                priority: 1
+                status: 1
+                team_id: 1
+                user_id: 1

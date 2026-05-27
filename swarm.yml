@@ -1,0 +1,73 @@
+services:
+  frontend:
+    image: tick-and-sass-frontend:local
+    
+  api: 
+    image: tick-and-sass-api:local
+    environment:
+      - NODE_ENV=production
+      - PGHOST=db
+      - PGPORT=5432
+      - PGUSER=tickAndSass
+      - PGDATABASE=tickAndSass
+      - PGPASSWORD=tickAndSass
+      - PORT=4000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      update_config:
+        parallelism: 1
+        delay: 10s
+    networks:
+      - app-network
+
+  db: 
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tickAndSass
+      POSTGRES_PASSWORD: tickAndSass
+      POSTGRES_DB: tickAndSass
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - type: bind
+        source: ./data
+        target: /docker-entrypoint-initdb.d
+    deploy:
+      replicas: 1
+    networks:
+      - app-network
+
+  redis: 
+    image: redis:alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    deploy:
+      replicas: 1
+    networks:
+      - app-network
+
+  proxy: 
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - type: bind
+        source: ./nginx/nginx-swarm.conf
+        target: /etc/nginx/nginx.conf
+        read_only: true
+    deploy:
+      replicas: 1
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: overlay
+
+volumes:
+  pg-data:
+  redis-data:

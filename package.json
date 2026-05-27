@@ -1,0 +1,21 @@
+{
+  "name": "Parcours 3",
+  "version": "1.0.0",
+  "description": "",
+  "main": "",
+  "scripts": {
+    "dev": "docker compose -f compose.yml up",
+    "dev:d": "docker compose -f compose.yml up -d",
+    "dev:down": "docker compose -f compose.yml down --remove-orphans",
+
+    "load:test:docker": "docker compose -f compose.yml run --rm artillery sh -c \"npx artillery run tests/load/scenarios/tickets.yml -e docker --output tests/load/reports/report.json\"",
+
+    "load:report": "mkdir -p tests/load/reports && npx artillery run tests/load/scenarios/tickets.yml --output tests/load/reports/report.json && npx artillery report tests/load/reports/report.json --output tests/load/reports/report.html",
+    "load:report:docker": "docker compose -f compose.yml run --rm artillery sh -c \"mkdir -p tests/load/reports && npx artillery run tests/load/scenarios/tickets.yml -e docker --output tests/load/reports/report.json && npx artillery report tests/load/reports/report.json --output tests/load/reports/report.html\""
+  },
+  "devDependencies": {
+    "artillery": "^2.0.0-33"
+  },
+  "author": "",
+  "license": "ISC"
+}

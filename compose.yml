@@ -1,0 +1,133 @@
+services:
+  database:
+    image: postgis/postgis:13-master
+    container_name: tick-and-sass-db
+    restart: unless-stopped
+    env_file:
+      - docker.env
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - pg-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tickandsass -d tickandsassproject"]
+      start_period: 10s
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - app-network
+
+  redis:
+    image: redis:alpine
+    container_name: tick-and-sass-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - app-network
+
+  api:
+    build:
+      context: ./api
+    container_name: tick-and-sass-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - PGHOST=database
+      - PGPORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PORT=4005
+    ports:
+      - "4005:4005"
+      - "5555:5555"
+    volumes:
+      - ./api:/usr/src/api
+      - /usr/src/api/node_modules
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: tick-and-sass-frontend
+    restart: unless-stopped
+    environment:
+      - PUBLIC_API_URL=http://localhost:8030/api/graphql
+      - INTERNAL_API_URL=http://api:4005/graphql
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/usr/src/frontend
+      - /usr/src/frontend/node_modules
+      - /usr/src/frontend/.svelte-kit
+    depends_on:
+      - api
+    networks:
+      - app-network
+
+  reverseproxy:
+    image: nginx:alpine
+    container_name: tick-and-sass-proxy
+    restart: unless-stopped
+    ports:
+      - "8030:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+      - frontend
+      - adminer
+    networks:
+      - app-network
+
+  adminer:
+    image: adminer:latest
+    container_name: tick-and-sass-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - database
+    networks:
+      - app-network
+
+  artillery:
+    image: node:20-alpine
+    container_name: tick-and-sass-artillery
+    working_dir: /work
+    volumes:
+      - ./:/work
+    depends_on:
+      - api
+    environment:
+      - NODE_ENV=production
+    networks:
+      - app-network
+    profiles:
+      - test
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  pg-data:
+  redis-data:

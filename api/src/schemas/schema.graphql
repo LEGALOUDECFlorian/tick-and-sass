@@ -1,0 +1,98 @@
+type Ticket {
+  id: Int!
+  team_id: Int!
+  user_id: Int!
+  title: String!
+  description: String!
+  status: Int!
+  priority: Int!
+  created_at: String!
+  updated_at: String!
+
+  user: User
+  team: Team
+  tasks: [Task!]!
+  comments: [Comment!]!
+}
+
+type Task {
+  id: Int!
+  ticket_id: Int!
+  title: String!
+  description: String!
+  status: Int!
+  created_at: String!
+  updated_at: String!
+}
+
+type Comment {
+  id: Int!
+  ticket_id: Int!
+  parent_id: Int
+  user_id: Int!
+  content: String!
+  created_at: String!
+  updated_at: String!
+
+  user: User
+}
+
+type User {
+  id: Int!
+  name: String!
+  email: String!
+  team_id: Int!
+  created_at: String!
+  updated_at: String!
+
+  team: Team
+}
+
+type Team {
+  id: Int!
+  name: String!
+  created_at: String!
+  updated_at: String!
+}
+
+input UpdatedTask {
+  id: Int!
+  status: Int
+  title: String
+  description: String
+}
+
+input CreateTicket {
+  team_id: Int!
+  user_id: Int!
+  title: String!
+  description: String!
+  status: Int!
+  priority: Int!
+}
+
+input UpdatedTicket {
+  id: Int!
+  title: String
+  description: String
+  status: Int
+  priority: Int
+  team_id: Int
+  user_id: Int
+}
+
+type Query {
+  health: String!
+  ticket(id: Int!): Ticket
+  tickets(limit: Int, team_id: Int, user_id: Int, status: Int): [Ticket!]!
+  teams: [Team!]!
+  comments: [Comment!]!
+  users: [User!]!
+}
+
+type Mutation {
+  createTicket(data: CreateTicket!): Ticket!
+  updateTask(data: UpdatedTask!): Task
+  updateTicket(data: UpdatedTicket!): Ticket
+  deleteTicket(id: Int!): Ticket
+}

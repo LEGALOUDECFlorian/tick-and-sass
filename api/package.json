@@ -1,0 +1,33 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "compile": "tsc",
+    "postcompile": "mkdir -p dist/schemas && cp src/schemas/schema.graphql dist/schemas/",
+    "start": "npm run compile && node ./dist/index.js",
+    "watch": "tsx watch ./src/index.ts",
+    "test": "vitest run"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@apollo/server": "^4.10.3",
+    "@prisma/client": "^6.16.3",
+    "dataloader": "^2.2.3",
+    "graphql": "^16.8.1",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "@types/pg": "^8.15.5",
+    "prisma": "^6.16.3",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.7.2",
+    "typescript": "^5.4.5",
+    "vitest": "^4.1.7"
+  }
+}
