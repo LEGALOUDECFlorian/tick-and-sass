@@ -1,9 +1,9 @@
 services:
   frontend:
-    image: tick-and-sass-frontend:local
+    image: florianlg/tick-and-sass-frontend:latest
     
   api: 
-    image: tick-and-sass-api:local
+    image: florianlg/tick-and-sass-api:latest
     environment:
       - NODE_ENV=production
       - PGHOST=db
