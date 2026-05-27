@@ -1,12 +1,13 @@
-import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
+import { sveltekit } from "@sveltejs/kit/vite";
+import { defineConfig } from "vite";
 
 export default defineConfig({
-	plugins: [sveltekit()],
-	server: {
-		host: true,
-		watch: {
-			usePolling: true
-		}
-	}
+  plugins: [sveltekit()],
+  server: {
+    host: "0.0.0.0",
+    allowedHosts: ["legaloudecflorian-server.eddi.cloud"],
+    watch: {
+      usePolling: true,
+    },
+  },
 });
